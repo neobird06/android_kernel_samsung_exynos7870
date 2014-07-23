@@ -86,6 +86,31 @@ int sk_filter(struct sock *sk, struct sk_buff *skb)
 	return err;
 }
 EXPORT_SYMBOL(sk_filter);
+EXPORT_SYMBOL(sk_filter_trim_cap);
+
+/* Helper to find the offset of pkt_type in sk_buff structure. We want
+ * to make sure its still a 3bit field starting at a byte boundary;
+ * taken from arch/x86/net/bpf_jit_comp.c.
+ */
+#ifdef __BIG_ENDIAN_BITFIELD
+#define PKT_TYPE_MAX   (7 << 5)
+#else
+#define PKT_TYPE_MAX   7
+#endif
+static unsigned int pkt_type_offset(void)
+{
+	struct sk_buff skb_probe = { .pkt_type = ~0, };
+	u8 *ct = (u8 *) &skb_probe;
+	unsigned int off;
+
+	for (off = 0; off < sizeof(struct sk_buff); off++) {
+		if (ct[off] == PKT_TYPE_MAX)
+			return off;
+	}
+
+	pr_err_once("Please fix %s, as pkt_type couldn't be found!\n", __func__);
+	return -1;
+}
 
 static u64 __skb_get_pay_offset(u64 ctx, u64 a, u64 x, u64 r4, u64 r5)
 {
@@ -943,6 +968,8 @@ out_err:
 }
 
 static struct bpf_prog *bpf_prepare_filter(struct bpf_prog *fp)
+static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp,
+					     struct sock *sk)
 {
 	int err;
 

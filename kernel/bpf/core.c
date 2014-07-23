@@ -18,6 +18,7 @@
  * 2 of the License, or (at your option) any later version.
  *
  * Andi Kleen - Fix a few bad bugs and races.
+<<<<<<< HEAD
  * Kris Katterjohn - Added many additional checks in bpf_check_classic()
  */
 
@@ -28,6 +29,11 @@
 #include <linux/moduleloader.h>
 #include <asm/unaligned.h>
 #include <linux/bpf.h>
+ * Kris Katterjohn - Added many additional checks in sk_chk_filter()
+ */
+#include <linux/filter.h>
+#include <linux/skbuff.h>
+#include <asm/unaligned.h>
 
 /* Registers */
 #define BPF_R0	regs[BPF_REG_0]
@@ -177,6 +183,7 @@ noinline u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
 }
 
 /**
+<<<<<<< HEAD
  *	__bpf_prog_run - run eBPF program on a given context
  *	@ctx: is the data we are operating on
  *	@insn: is the array of eBPF instructions
@@ -184,6 +191,15 @@ noinline u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
  * Decode and execute eBPF instructions.
  */
 static unsigned int __bpf_prog_run(void *ctx, const struct bpf_insn *insn)
+ *	__sk_run_filter - run a filter on a given context
+ *	@ctx: buffer to run the filter on
+ *	@insn: filter to apply
+ *
+ * Decode and apply filter instructions to the skb->data. Return length to
+ * keep, 0 for none. @ctx is the data we are operating on, @insn is the
+ * array of filter instructions.
+ */
+static unsigned int __sk_run_filter(void *ctx, const struct sock_filter_int *insn)
 {
 	u64 stack[MAX_BPF_STACK / sizeof(u64)];
 	u64 regs[MAX_BPF_REG], tmp;
@@ -359,6 +375,8 @@ select_insn:
 			return 0;
 		div64_u64_rem(DST, SRC, &tmp);
 		DST = tmp;
+		tmp = DST;
+		DST = do_div(tmp, SRC);
 		CONT;
 	ALU_MOD_X:
 		if (unlikely(SRC == 0))
@@ -369,6 +387,8 @@ select_insn:
 	ALU64_MOD_K:
 		div64_u64_rem(DST, IMM, &tmp);
 		DST = tmp;
+		tmp = DST;
+		DST = do_div(tmp, IMM);
 		CONT;
 	ALU_MOD_K:
 		tmp = (u32) DST;
@@ -378,6 +398,7 @@ select_insn:
 		if (unlikely(SRC == 0))
 			return 0;
 		DST = div64_u64(DST, SRC);
+		do_div(DST, SRC);
 		CONT;
 	ALU_DIV_X:
 		if (unlikely(SRC == 0))
@@ -388,6 +409,7 @@ select_insn:
 		CONT;
 	ALU64_DIV_K:
 		DST = div64_u64(DST, IMM);
+		do_div(DST, IMM);
 		CONT;
 	ALU_DIV_K:
 		tmp = (u32) DST;
@@ -554,6 +576,7 @@ load_word:
 		 * only appearing in the programs where ctx ==
 		 * skb. All programs keep 'ctx' in regs[BPF_REG_CTX]
 		 * == BPF_R6, bpf_convert_filter() saves it in BPF_R6,
+		 * == BPF_R6, sk_convert_filter() saves it in BPF_R6,
 		 * internal BPF verifier will check that BPF_R6 ==
 		 * ctx.
 		 *
@@ -616,10 +639,12 @@ load_byte:
 }
 
 void __weak bpf_int_jit_compile(struct bpf_prog *prog)
+void __weak bpf_int_jit_compile(struct sk_filter *prog)
 {
 }
 
 /**
+<<<<<<< HEAD
  *	bpf_prog_select_runtime - select execution runtime for BPF program
  *	@fp: bpf_prog populated with internal BPF program
  *
@@ -664,3 +689,24 @@ int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
 {
 	return -EFAULT;
 }
+ *	sk_filter_select_runtime - select execution runtime for BPF program
+ *	@fp: sk_filter populated with internal BPF program
+ *
+ * try to JIT internal BPF program, if JIT is not available select interpreter
+ * BPF program will be executed via SK_RUN_FILTER() macro
+ */
+void sk_filter_select_runtime(struct sk_filter *fp)
+{
+	fp->bpf_func = (void *) __sk_run_filter;
+
+	/* Probe if internal BPF can be JITed */
+	bpf_int_jit_compile(fp);
+}
+EXPORT_SYMBOL_GPL(sk_filter_select_runtime);
+
+/* free internal BPF program */
+void sk_filter_free(struct sk_filter *fp)
+{
+	bpf_jit_free(fp);
+}
+EXPORT_SYMBOL_GPL(sk_filter_free);
