@@ -288,6 +288,15 @@ struct bpf_prog_aux;
 /* Macro to invoke filter function. */
 #define SK_RUN_FILTER(filter, ctx) \
 	(*filter->prog->bpf_func)(ctx, filter->prog->insnsi)
+#define SK_RUN_FILTER(filter, ctx)  (*filter->bpf_func)(ctx, filter->insnsi)
+
+struct bpf_insn {
+	__u8	code;		/* opcode */
+	__u8	dst_reg:4;	/* dest register */
+	__u8	src_reg:4;	/* source register */
+	__s16	off;		/* signed offset */
+	__s32	imm;		/* signed immediate constant */
+};
 
 #ifdef CONFIG_COMPAT
 /* A struct sock_filter is architecture independent. */
@@ -319,6 +328,10 @@ struct bpf_prog {
 	union {
 		struct sock_filter	insns[0];
 		struct bpf_insn		insnsi[0];
+	union {
+		struct sock_filter	insns[0];
+		struct bpf_insn		insnsi[0];
+		struct work_struct	work;
 	};
 };
 
@@ -365,6 +378,8 @@ void bpf_prog_free(struct bpf_prog *fp);
 
 int bpf_convert_filter(struct sock_filter *prog, int len,
 		       struct bpf_insn *new_prog, int *new_len);
+int sk_convert_filter(struct sock_filter *prog, int len,
+		      struct bpf_insn *new_prog, int *new_len);
 
 struct bpf_prog *bpf_prog_alloc(unsigned int size, gfp_t gfp_extra_flags);
 struct bpf_prog *bpf_prog_realloc(struct bpf_prog *fp_old, unsigned int size,

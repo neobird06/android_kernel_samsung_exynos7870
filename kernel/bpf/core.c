@@ -199,7 +199,7 @@ static unsigned int __bpf_prog_run(void *ctx, const struct bpf_insn *insn)
  * keep, 0 for none. @ctx is the data we are operating on, @insn is the
  * array of filter instructions.
  */
-static unsigned int __sk_run_filter(void *ctx, const struct sock_filter_int *insn)
+static unsigned int __sk_run_filter(void *ctx, const struct bpf_insn *insn)
 {
 	u64 stack[MAX_BPF_STACK / sizeof(u64)];
 	u64 regs[MAX_BPF_REG], tmp;
