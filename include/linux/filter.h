@@ -380,6 +380,8 @@ int bpf_convert_filter(struct sock_filter *prog, int len,
 		       struct bpf_insn *new_prog, int *new_len);
 int sk_convert_filter(struct sock_filter *prog, int len,
 		      struct bpf_insn *new_prog, int *new_len);
+int bpf_convert_filter(struct sock_filter *prog, int len,
+		       struct bpf_insn *new_prog, int *new_len);
 
 struct bpf_prog *bpf_prog_alloc(unsigned int size, gfp_t gfp_extra_flags);
 struct bpf_prog *bpf_prog_realloc(struct bpf_prog *fp_old, unsigned int size,
