@@ -591,6 +591,11 @@ bpf_prog_destroy() for destroying it. The macro
 BPF_PROG_RUN(filter, ctx) transparently invokes eBPF interpreter or JITed
 code to run the filter. 'filter' is a pointer to struct bpf_prog that we
 got from bpf_prog_create(), and 'ctx' the given context (e.g.
+by using sk_unattached_filter_create() for setting up the filter, resp.
+sk_unattached_filter_destroy() for destroying it. The macro
+SK_RUN_FILTER(filter, ctx) transparently invokes eBPF interpreter or JITed
+code to run the filter. 'filter' is a pointer to struct sk_filter that we
+got from sk_unattached_filter_create(), and 'ctx' the given context (e.g.
 skb pointer). All constraints and restrictions from bpf_check_classic() apply
 before a conversion to the new layout is being done behind the scenes!
 
@@ -705,6 +710,11 @@ Some core changes of the new internal format:
 
   For practical reasons all eBPF programs have only one argument 'ctx' which is
   already placed into R1 (e.g. on __bpf_prog_run() startup) and the programs
+  returns will be seamless. Without JIT, __sk_run_filter() interpreter needs to
+  be used to call into f2.
+
+  For practical reasons all eBPF programs have only one argument 'ctx' which is
+  already placed into R1 (e.g. on __sk_run_filter() startup) and the programs
   can call kernel functions with up to 5 arguments. Calls with 6 or more arguments
   are currently not supported, but these restrictions can be lifted if necessary
   in the future.
@@ -952,6 +962,7 @@ Size modifier is one of ...
 Mode modifier is one of:
 
   BPF_IMM  0x00  /* used for 32-bit mov in classic BPF and 64-bit in eBPF */
+  BPF_IMM  0x00  /* classic BPF only, reserved in eBPF */
   BPF_ABS  0x20
   BPF_IND  0x40
   BPF_MEM  0x60

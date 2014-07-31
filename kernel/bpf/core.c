@@ -18,7 +18,6 @@
  * 2 of the License, or (at your option) any later version.
  *
  * Andi Kleen - Fix a few bad bugs and races.
-<<<<<<< HEAD
  * Kris Katterjohn - Added many additional checks in bpf_check_classic()
  */
 
@@ -30,6 +29,7 @@
 #include <asm/unaligned.h>
 #include <linux/bpf.h>
  * Kris Katterjohn - Added many additional checks in sk_chk_filter()
+ * Kris Katterjohn - Added many additional checks in bpf_check_classic()
  */
 #include <linux/filter.h>
 #include <linux/skbuff.h>
@@ -183,7 +183,6 @@ noinline u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
 }
 
 /**
-<<<<<<< HEAD
  *	__bpf_prog_run - run eBPF program on a given context
  *	@ctx: is the data we are operating on
  *	@insn: is the array of eBPF instructions
@@ -644,7 +643,6 @@ void __weak bpf_int_jit_compile(struct sk_filter *prog)
 }
 
 /**
-<<<<<<< HEAD
  *	bpf_prog_select_runtime - select execution runtime for BPF program
  *	@fp: bpf_prog populated with internal BPF program
  *
